@@ -1,1 +1,1 @@
-# Multi-Player-Tetris
+# Multiplayer-Tetris
