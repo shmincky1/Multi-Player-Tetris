@@ -77,7 +77,7 @@ class GameStates(enum.Enum):
 	playing=2
 
 class Server(Game):
-	def __init__(self, size, theme, tickrate=4, server_address=('0.0.0.0',1244)):
+	def __init__(self, size, theme, tickrate=4, server_address=('',1244)):
 		self.size=size
 		self.theme=theme
 		self.server_address=server_address
