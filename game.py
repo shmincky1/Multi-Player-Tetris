@@ -77,7 +77,7 @@ class GameStates(enum.Enum):
 	playing=2
 
 class Server(Game):
-	def __init__(self, size, theme, tickrate=4, server_address=('0.0.0.0',random.randint(255,10000))):
+	def __init__(self, size, theme, tickrate=4, server_address=('0.0.0.0',1244)):
 		self.size=size
 		self.theme=theme
 		self.server_address=server_address
@@ -116,7 +116,6 @@ class Server(Game):
 		clock=pygame.time.Clock()
 		while True:
 			clock.tick(self.tickrate)
-			print("Tick")
 
 class Client(Game):
 	def __init__(self, identifier, address):
@@ -145,4 +144,3 @@ class Client(Game):
 			self.game_state=GameStates.arranging
 			self.theme=block.Theme(data["themename"], data["themeprefix"])
 			self.sendj({"action":"join_OK"})
-			print("Joined")
