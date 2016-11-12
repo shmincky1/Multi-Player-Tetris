@@ -41,8 +41,8 @@ All Themes
   * Dark = #8000f0
   * Light = #a80010
 * LEVEL 08 = Blue/Red-Orange
-  * Dark = #8000f0
-  * Light = #a80010
+  * Dark = #
+  * Light = #
 * LEVEL 09 = Red/Orange
   * Dark = #d82800
   * Light = #fc9838
