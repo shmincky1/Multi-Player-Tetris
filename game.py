@@ -195,7 +195,7 @@ class Server(Game):
 
 	def get_blocks_message(self):
 		msg=b"b"+struct.pack('!b', len(self.blocks))
-		for block in self.blocks.values():
+		for block in list(self.blocks.values()):
 			msg+=block.dump()
 		return msg
 
@@ -225,7 +225,7 @@ class Server(Game):
 				}) for client in self.clients]
 			if self.game_state==GameStates.playing:
 				
-				for block in self.blocks.values():
+				for block in list(self.blocks.values()):
 					block.y+=1
 
 				done=False
@@ -262,7 +262,7 @@ class Server(Game):
 
 	def get_collisions(self, predict=1):
 		colliding=[]
-		for blockid, block in self.blocks.items():
+		for blockid, block in list(self.blocks.items()):
 			destroy_block=False
 			for row_idx, row in enumerate(block.grid):
 				for col_idx, val in enumerate(row):
@@ -469,7 +469,7 @@ class Client(Game):
 		if self.game_state==GameStates.playing:
 			self._surf.fill((0,0,0))
 			self.draw_placed_blocks(self._surf)
-			for name, block in self.blocks.items():
+			for name, block in list(self.blocks.items()):
 				block.draw_to(self._surf, self, block.x, block.y)
 		elif self.game_state==GameStates.arranging:
 			self._surf.fill((0,0,0))
