@@ -18,7 +18,7 @@ class Game:
 		self.game_state=GameStates.joining
 		self.recv_buf_size=1024
 		self.blocktypes=block.load_blocktypes('blocks.json')
-		self.cleared=0
+		self.cleared=8
 		self.score=0
 		self.level=0
 
@@ -68,11 +68,11 @@ class ClientView:
 		self.next_block=None
 
 	def send(self, data):
-		print("**SENDING**", data)
+		# print("**SENDING**", data)
 		self.server.sock.sendto(data.encode("utf-8"), self.addr)
 
 	def sendb(self, data):
-		print("**SENDING**", data)
+		# print("**SENDING**", data)
 		self.server.sock.sendto(data, self.addr)
 
 	def sendj(self, data):
@@ -381,7 +381,8 @@ class Client(Game):
 			self.cleared=data["cleared"]
 			self.score=data["score"]
 			self.level=data["level"]
-			self.theme=self.themes[self.level]
+			self.theme=self.themes[min(self.level, 9)]
+			self.styles_cache={}
 
 		if data["action"]=="notify_next_block":
 			self.next_block=self.blocktypes[data["block"]]
@@ -390,9 +391,9 @@ class Client(Game):
 			self.cleared=data["cleared"]
 			self.score=data["score"]
 			self.level=data["level"]
-			self.theme=self.themes[self.level]
+			
 			self.game_state=GameStates.over
-			self.styles_cache={}
+			
 
 	def handle(self, dgram, addr):
 		if dgram[0]==ord('b'):
@@ -441,6 +442,7 @@ class Client(Game):
 		if style in self.styles_cache:
 			img=self.styles_cache[style]
 		else:
+			print("Rebuilding style cache element... "+str(style.value))
 			img=pygame.transform.scale(self.theme.get_image(style), (blocksize, blocksize))
 			self.styles_cache[style]=img
 
