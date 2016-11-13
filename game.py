@@ -471,7 +471,7 @@ class Client(Game):
 				block.draw_to(self._surf, self, block.x, block.y)
 		elif self.game_state==GameStates.arranging:
 			self._surf.fill((0,0,0))
-			self._surf.blit(self.font.render("Connect all clients and hit ENTER...", (255,255,255)), (0,0))
+			self._surf.blit(self.font.render("Connect all clients and hit ENTER---", (255,255,255)), (0,0))
 			for x in range(self.view.view_offset-1, self.view.view_offset+self.view.view_width+2):
 				for y in range(self.view.get_blocks_at_size(self.inches_per_block)[1]+1):
 					self._surf.blit(
