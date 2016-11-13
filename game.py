@@ -250,6 +250,7 @@ class Client(Game):
 			self.theme=block.Theme(data["themename"], data["themeprefix"])
 			self.inches_per_block=data["inches_per_block"]
 			self.view.view_offset=data["xoffset"]
+			self.view.view_width=self.view.get_blocks_at_size(self.inches_per_block)[0]
 			self.sendj({"action":"join_OK"})
 
 		if data["action"]=="arrange_update":
@@ -309,7 +310,12 @@ class Client(Game):
 		else:
 			img=pygame.transform.scale(self.theme.get_image(style), (blocksize, blocksize))
 			self.styles_cache[style]=img
-		screen.blit(img, self.compute_offset(x,y))
+
+		pos=self.compute_offset(x,y)
+		# if pos[0]<0 or pos[0]>self.view.window_size[0]+20:
+		# 	return
+
+		screen.blit(img, pos)
 
 	def draw_placed_blocks(self, screen):
 		row=0

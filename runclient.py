@@ -1,10 +1,12 @@
 import game, block, pygame, sys, os
 
-SCREEN_SIZE=(1366,768)
-PPI=87
+
+PPI=os.environ.get("PPI", 87)
 
 pygame.init()
 pygame.key.set_repeat(200,100)
+dispinfo=pygame.display.Info()
+SCREEN_SIZE=dispinfo.current_w, dispinfo.current_h
 screen=pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
 
 isserver="server" in sys.argv[1]
