@@ -1,4 +1,4 @@
-import game, block, pygame, sys, os
+import game, block, pygame, sys, os, ui
 
 
 PPI=int(os.environ.get("PPI", 87))
@@ -20,6 +20,8 @@ if isserver:
 
 identifier=sys.argv[1]
 
+font = ui.Font("img/alphanum/", 7, "-1234567890QWERTYUIOPASDFGHJKLZXCVBNM")
+
 client=game.Client(identifier, SCREEN_SIZE, PPI, (sys.argv[2], 1244))
 client.connect()
 
@@ -38,6 +40,7 @@ while run:
 				run=False
 			client.handle_event(event)
 	client.render(screen)
+	screen.blit(font.render("Foobar"), (0,0))
 	pygame.display.flip()
 
 os._exit(0)

@@ -213,7 +213,7 @@ class Server(Game):
 				updated=False
 				while not done:
 					done=True
-					for row in range(self.size[1]-1):
+					for row in range(self.size[1]):
 						if all([blk!=-1 for blk in\
 						 self.placed_blocks[self.size[0]*row:self.size[0]*(row+1)]]):
 							for row_to_move in reversed(range(row)):
@@ -412,8 +412,8 @@ class Client(Game):
 			for name, block in self.blocks.items():
 				block.draw_to(screen, self, block.x, block.y)
 		else:
-			for x in range(50):
-				for y in range(25):
+			for x in range(self.view.view_offset-1, self.view.view_offset+self.view.view_width+2):
+				for y in range(self.view.get_blocks_at_size(self.inches_per_block)[1]+1):
 					screen.blit(
 						pygame.font.SysFont("monospace",10).render("%i,%i"%(x,y), 0, (255,255,255)),
 						self.compute_offset(x,y)
