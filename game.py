@@ -18,7 +18,7 @@ class Game:
 		self.game_state=GameStates.joining
 		self.recv_buf_size=1024
 		self.blocktypes=block.load_blocktypes('blocks.json')
-		self.cleared=8
+		self.cleared=0
 		self.score=0
 		self.level=0
 
