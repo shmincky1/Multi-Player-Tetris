@@ -1,23 +1,21 @@
 import game, block, pygame, sys, os
 
-SCREEN_SIZE=(800,500)
+SCREEN_SIZE=(400,600)
 PPI=87
 
 pygame.init()
+pygame.key.set_repeat(200,100)
 screen=pygame.display.set_mode(SCREEN_SIZE)
 
 isserver="server" in sys.argv
 
 if isserver:
-	server = game.Server(0.5, block.Theme("0", "0"))
+	server = game.Server(0.4, block.Theme("0", "0"), tickrate=1)
 
 identifier="server" if isserver else "client"
 
 client=game.Client(identifier, SCREEN_SIZE, PPI, ('127.0.0.1', 1244))
 client.connect()
-
-if not isserver:
-	client.view.view_offset[0]=9
 
 i=0
 
@@ -28,8 +26,9 @@ while run:
 			print("quit")
 			run=False
 		if event.type==pygame.KEYDOWN and isserver:
-			i+=1
-			server[0][i]=0
+			if event.key==pygame.K_RETURN:
+				server.start_game()
+			client.handle_event(event)
 	client.render(screen)
 	pygame.display.flip()
 

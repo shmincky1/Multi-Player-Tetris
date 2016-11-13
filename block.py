@@ -36,21 +36,8 @@ class Theme:
 class BlockType:
 	def __init__(self, grids, style, typeid):
 		self.style=style
-		self.images={} #Mapping of Theme -> [0 deg rotated image, 90 deg rotated image, 180 deg rotated image, 170 deg rotated image]
 		self.grids=grids #array of 4x4 rows, cols array of booleans
 		self.typeid=typeid
-
-	def build_images_for_theme(self, theme):
-		if theme in self.images: return
-		self.images[theme]=[]
-		for rot_idx in range(len(self.grids)):
-			grid=self.grids[rot_idx]
-			surf=pygame.Surface((4*GRID_BASE_SIZE, 4*GRID_BASE_SIZE))
-			for row_idx, row in enumerate(grid):
-				for col_idx, value in enumerate(row):
-					if value:
-						surf.blit(theme.get_image(self.style), (col_idx*GRID_BASE_SIZE, row_idx*GRID_BASE_SIZE))
-			self.images[theme].append(surf)
 
 class Block:
 	_format_string="!HBHHB"
@@ -58,9 +45,14 @@ class Block:
 		self.worldpos=position if position else [0,0]
 		self.blockid=blockid
 		self.blocktype=blocktype
-		self.images=blocktype.images[theme]
 		self.grids=blocktype.grids
 		self.rotation=rotation
+
+	def draw_to(self, screen, game, x, y):
+		for row_idx, row in enumerate(self.grid):
+			for col_idx, val in enumerate(row):
+				if val:
+					game.drawworldblock(screen, x+col_idx, y+row_idx, self.blocktype.style)
 
 	def next_rot(self):
 		self.rotation+=1
@@ -70,7 +62,7 @@ class Block:
 	def prev_rot(self):
 		self.rotation-=1
 		if self.rotation==-1:
-			self.rotation=len(self.grids)[-1]
+			self.rotation=len(self.grids)-1
 
 	def dump(self):
 		return struct.pack(self._format_string, self.blockid, self.blocktype.typeid, self.x, self.y, self.rotation)
@@ -106,7 +98,5 @@ def load_blocktypes(path):
 		idx=0
 		for name, data in data["blocks"].items():
 			blocktypes[name]=BlockType(data["grids"], Styles.from_string(data["style"]), ord(name))
+			print(name, "->", ord(name), blocktypes[name].typeid)
 	return blocktypes
-
-def build_images_for_theme(blocktypes, theme):
-	[blocktype.build_images_for_theme(theme) for blocktype in blocktypes]
