@@ -1,7 +1,7 @@
 import game, block, pygame, sys, os
 
 
-PPI=os.environ.get("PPI", 87)
+PPI=int(os.environ.get("PPI", 87))
 
 pygame.init()
 pygame.key.set_repeat(200,100)
