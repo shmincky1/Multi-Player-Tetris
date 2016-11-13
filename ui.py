@@ -53,6 +53,10 @@ class Font:
 
 	def init_cache(self):
 		self.cache={}
+		space=pygame.Surface([self.size]*2).convert()
+		space.fill((255,255,255))
+		space.set_colorkey((255,255,255))
+		self.cache[' ']=space
 		for char in self.characters:
 			img=pygame.image.load(self.basepath+"%s.png"%char).convert()
 			img.set_colorkey((255,255,255))
@@ -63,7 +67,7 @@ class Font:
 		surf.set_colorkey((69,69,69))
 		surf.fill((69,69,69))
 		for idx, char in enumerate(text.upper()):
-			if char not in self.characters:
+			if char not in self.characters+" ":
 				print("***ERROR*** %s not in font"%char)
 			else:
 				surf.blit(self.cache[char], (idx*(self.scaledsize+self.padding), 0))
@@ -84,7 +88,7 @@ class UIBar:
 
 	def _redraw(self):
 		self.surf=self.base_surf.copy()
-		self.surf.blit(self.font.render("%04i"%self.client.cleared), (225,25))
+		self.surf.blit(self.font.render("%04i"%self.client.cleared), (227,25))
 		if self.client.next_block:
 			self.surf.blit(self.client.next_block.render_mini(self.client.theme), (23,10))
 		self.surf.blit(self.lgfont.render("%03i"%self.client.level), (535,20))
@@ -101,3 +105,8 @@ class UIBar:
 	@classmethod
 	def calculate_size(self, width):
 		return calc_scale(1000, 64, width, 9999)
+
+def disp_loading(screen, font, text):
+	screen.fill((0,0,0))
+	screen.blit(font.render(text), (0,0))
+	pygame.display.flip()

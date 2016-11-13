@@ -44,7 +44,11 @@ class Game:
 			try:
 				data, addr = self.sock.recvfrom(self.recv_buf_size)
 				if data[0]==ord("j"):
-					self.handlej(json.loads(data.decode("utf-8")[1:]), addr)
+					print(data)
+					try:
+						self.handlej(json.loads(data.decode("utf-8")[1:]), addr)
+					except ValueError:
+						print("magic mystery error snarfed")
 				else:
 					self.handle(data, addr)
 			except socket.error as e:
@@ -64,9 +68,11 @@ class ClientView:
 		self.next_block=None
 
 	def send(self, data):
+		print("**SENDING**", data)
 		self.server.sock.sendto(data.encode("utf-8"), self.addr)
 
 	def sendb(self, data):
+		print("**SENDING**", data)
 		self.server.sock.sendto(data, self.addr)
 
 	def sendj(self, data):
@@ -86,6 +92,7 @@ class GameStates(enum.Enum):
 	joining=0
 	arranging=1
 	playing=2
+	over=3
 
 class Server(Game):
 	def __init__(self, inches_per_block, theme, tickrate=4, server_address=('',1244)):
@@ -209,6 +216,13 @@ class Server(Game):
 					"action":"arrange_update",
 					"size":self.size
 				}) for client in self.clients]
+			if self.game_state==GameStates.over:
+				[client.sendj({
+					"action":"game_over",
+					"cleared":self.cleared,
+					"score":self.score,
+					"level":self.level
+				}) for client in self.clients]
 			if self.game_state==GameStates.playing:
 				
 				for block in self.blocks.values():
@@ -233,7 +247,7 @@ class Server(Game):
 				if updated:
 					self.score+=[0, 40, 100, 300, 1200][updated]*(self.level+1)
 					self.level=self.cleared//10
-					self.tickrate=self.initial_tickrate*(0.75**self.level)
+					self.tickrate=self.initial_tickrate*(1.3333**self.level)
 					[client.sendj({
 						"action":"update_cleared",
 						"cleared":self.cleared,
@@ -269,6 +283,8 @@ class Server(Game):
 				for col_idx, val in enumerate(row):
 					if val:
 						self[block.y+row_idx][block.x+col_idx]=block.blocktype.style.value
+						if block.y<2:
+							self.game_state=GameStates.over
 
 			for client in self.clients:
 				if client.owned_block==self.blocks[key]:
@@ -355,7 +371,7 @@ class Client(Game):
 					self.init_board(data["size"])
 					self.styles_cache={}
 
-			self.recv_buf_size=self.size[0]*self.size[1]+10
+			self.recv_buf_size=self.size[0]*self.size[1]+256
 
 		if data["action"]=="start":
 			self.game_state=GameStates.playing
@@ -365,9 +381,17 @@ class Client(Game):
 			self.cleared=data["cleared"]
 			self.score=data["score"]
 			self.level=data["level"]
+			self.theme=self.themes[self.level]
 
 		if data["action"]=="notify_next_block":
 			self.next_block=self.blocktypes[data["block"]]
+
+		if data["action"]=="game_over":
+			self.cleared=data["cleared"]
+			self.score=data["score"]
+			self.level=data["level"]
+			self.theme=self.themes[self.level]
+			self.game_state=GameStates.over
 
 	def handle(self, dgram, addr):
 		if dgram[0]==ord('b'):
@@ -438,12 +462,14 @@ class Client(Game):
 
 	def render(self, screen, y_offset):
 		# print(self.get_scale())
-		self._surf.fill((0,0,0))
+		
 		if self.game_state==GameStates.playing:
+			self._surf.fill((0,0,0))
 			self.draw_placed_blocks(self._surf)
 			for name, block in self.blocks.items():
 				block.draw_to(self._surf, self, block.x, block.y)
-		else:
+		elif self.game_state==GameStates.arranging:
+			self._surf.fill((0,0,0))
 			for x in range(self.view.view_offset-1, self.view.view_offset+self.view.view_width+2):
 				for y in range(self.view.get_blocks_at_size(self.inches_per_block)[1]+1):
 					self._surf.blit(
@@ -459,6 +485,8 @@ class Client(Game):
 						),
 						1
 					)
+		elif self.game_state==GameStates.over:
+			self._surf.blit(self.font.render("Game Over", (255,0,0)), (0,0))
 		screen.blit(self._surf, (0,y_offset))
 
 	def handle_event(self, event):
