@@ -5,7 +5,10 @@ class _SliceView:
 		self.offset=offset
 		self.list=list
 	def __getitem__(self, idx):
-		return self.list[self.offset+idx]
+		try:
+			return self.list[self.offset+idx]
+		except IndexError:
+			return -1
 	def __setitem__(self, idx, val):
 		self.list[self.offset+idx]=val
 
@@ -140,23 +143,35 @@ class Server(Game):
 			if dgram["action"]=="start_OK":
 				client.game_state=GameStates.playing
 
+			if client.owned_block is None:
+				return
+
+			initial=client.owned_block.x
+			initial_rot=client.owned_block.rotation
 			if dgram["action"]=="move_left":
 				print("Moving left")
 				client.owned_block.x-=1
-				if client.owned_block.x==-1:
-					client.owned_block.x=self.size[0]-1
-			if dgram["action"]=="move_right":
+				if client.owned_block.x+client.owned_block.get_leftmost()<=-1:
+					client.owned_block.x=self.size[0]-client.owned_block.get_rightmost()-1
+			elif dgram["action"]=="move_right":
 				client.owned_block.x+=1
-				if client.owned_block.x==self.size[0]:
-					client.owned_block.x=0
-			if dgram["action"]=="move_down":
-				client.owned_block.y+=1
-			if dgram["action"]=="rotate_cw":
+				if client.owned_block.x+client.owned_block.get_rightmost()>=self.size[0]:
+					client.owned_block.x=-client.owned_block.get_leftmost()
+			elif dgram["action"]=="rotate_cw":
 				client.owned_block.next_rot()
-			if dgram["action"]=="rotate_ccw":
+			elif dgram["action"]=="rotate_ccw":
 				client.owned_block.prev_rot()
 
+			if self.get_collisions(predict=0):
+				client.owned_block.x=initial
+				client.owned_block.rotation=initial_rot
+
+			if dgram["action"]=="move_down":
+				client.owned_block.y+=1
+
 			if dgram["action"] in ["move_left", "move_right", "move_down", "rotate_cw", "rotate_ccw"]:
+				if self.check_collisions():
+					self.send_blocks_update()
 				self.send_update()
 
 	def handle(self, dgram, addr):
@@ -176,6 +191,10 @@ class Server(Game):
 		msg=self.get_blocks_message()
 		[client.sendb(msg) for client in self.clients]
 
+	def send_blocks_update(self):
+		data=self.dump()
+		[client.sendb(data) for client in self.clients]
+
 	def update_loop(self):
 		clock=pygame.time.Clock()
 		while True:
@@ -186,21 +205,71 @@ class Server(Game):
 					"size":self.size
 				}) for client in self.clients]
 			if self.game_state==GameStates.playing:
-				data=self.dump()
-				[client.sendb(data) for client in self.clients]
-				self.send_update()
-
+				
 				for block in self.blocks.values():
 					block.y+=1
 
-				for client in self.clients:
-					if client.owned_block is None:
-						client.owned_block=self.create_block(
-							random.choice(list(self.blocktypes.values())),
-							random.randint(client.view_offset,
-								client.view_offset+client.view_width),
-							1
-						)
+				done=False
+				updated=False
+				while not done:
+					done=True
+					for row in range(self.size[1]-1):
+						if all([blk!=-1 for blk in\
+						 self.placed_blocks[self.size[0]*row:self.size[0]*(row+1)]]):
+							for row_to_move in reversed(range(row)):
+								for col in range(self.size[0]):
+									self[row_to_move+1][col]=self[row_to_move][col]
+							for col in range(self.size[0]):
+								self[0][col]=-1
+							done=False
+							updated=True
+
+				if self.check_collisions() or updated:
+					self.send_blocks_update()
+
+				self.send_update()
+
+	def get_collisions(self, predict=1):
+		colliding=[]
+		for blockid, block in self.blocks.items():
+			destroy_block=False
+			for row_idx, row in enumerate(block.grid):
+				for col_idx, val in enumerate(row):
+					if val:
+						if block.y+row_idx+predict==self.size[1] or \
+						   self[block.y+row_idx+predict][block.x+col_idx]!=-1:
+							destroy_block=True
+			if destroy_block:
+				colliding.append(blockid)
+		return colliding
+			
+
+	def check_collisions(self):
+		collisions=self.get_collisions()
+		for key in collisions:
+			block=self.blocks[key]
+			for row_idx, row in enumerate(block.grid):
+				for col_idx, val in enumerate(row):
+					if val:
+						self[block.y+row_idx][block.x+col_idx]=block.blocktype.style.value
+
+			for client in self.clients:
+				if client.owned_block==self.blocks[key]:
+					client.owned_block=None
+			del self.blocks[key]
+
+		self.create_user_blocks()
+		return len(collisions)
+	
+	def create_user_blocks(self):
+		for client in self.clients:
+			if client.owned_block is None:
+				# print(client.view_offset+2-(client.view_width//2))
+				client.owned_block=self.create_block(
+					random.choice(list(self.blocktypes.values())),
+					client.view_offset+(client.view_width//2)-2,
+					1
+				)
 
 	def create_block(self, blocktype, x, y):
 		self.current_blockid+=1
@@ -274,6 +343,8 @@ class Client(Game):
 				count=dgram[1]
 				idx=2
 				structsz=struct.calcsize(block.Block._format_string)
+				mine=list(self.blocks.keys())
+				thiers=[]
 				for _ in range(count):
 					blockid, typeid, x, y, rot = \
 					 struct.unpack(block.Block._format_string, dgram[idx:idx+structsz])
@@ -288,7 +359,12 @@ class Client(Game):
 							position=[x,y],
 							rotation=rot
 						)
+					thiers.append(blockid)
 					idx+=structsz
+
+				for bid in mine:
+					if bid not in thiers:
+						del self.blocks[bid]
 		else:
 			if self.game_state!=GameStates.joining:
 				try:

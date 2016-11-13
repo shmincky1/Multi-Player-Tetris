@@ -40,7 +40,7 @@ class BlockType:
 		self.typeid=typeid
 
 class Block:
-	_format_string="!HBHHB"
+	_format_string="!HBhhB"
 	def __init__(self, blocktype, theme, blockid=None, position=None, rotation=0):
 		self.worldpos=position if position else [0,0]
 		self.blockid=blockid
@@ -78,6 +78,20 @@ class Block:
 	@property
 	def grid(self):
 		return self.grids[self.rotation]
+
+	def get_most(self, min_or_max):
+		possiblities=[]
+		for row in self.grid:
+			for idx, val in enumerate(row):
+				if val:
+					possiblities.append(idx)
+		return min_or_max(possiblities)
+
+	def get_leftmost(self):
+		return self.get_most(min)
+
+	def get_rightmost(self):
+		return self.get_most(max)
 
 	@property
 	def x(self): return self.worldpos[0]

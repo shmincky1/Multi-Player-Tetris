@@ -7,7 +7,11 @@ pygame.init()
 pygame.key.set_repeat(200,100)
 dispinfo=pygame.display.Info()
 SCREEN_SIZE=dispinfo.current_w, dispinfo.current_h
-screen=pygame.display.set_mode(SCREEN_SIZE, pygame.FULLSCREEN)
+flags=pygame.FULLSCREEN
+if len(sys.argv)==4:
+	SCREEN_SIZE=[int(i) for i in sys.argv[3].split(",")]
+	flags=0
+screen=pygame.display.set_mode(SCREEN_SIZE, flags)
 
 isserver="server" in sys.argv[1]
 
