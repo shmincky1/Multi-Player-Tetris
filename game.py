@@ -268,7 +268,7 @@ class Server(Game):
 				client.owned_block=self.create_block(
 					random.choice(list(self.blocktypes.values())),
 					client.view_offset+(client.view_width//2)-2,
-					1
+					-2
 				)
 
 	def create_block(self, blocktype, x, y):
