@@ -392,6 +392,7 @@ class Client(Game):
 			self.level=data["level"]
 			self.theme=self.themes[self.level]
 			self.game_state=GameStates.over
+			self.styles_cache={}
 
 	def handle(self, dgram, addr):
 		if dgram[0]==ord('b'):
