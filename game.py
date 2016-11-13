@@ -18,6 +18,9 @@ class Game:
 		self.game_state=GameStates.joining
 		self.recv_buf_size=1024
 		self.blocktypes=block.load_blocktypes('blocks.json')
+		self.cleared=0
+		self.score=0
+		self.level=0
 
 	def init_board(self, size):
 		print("initing board")
@@ -58,6 +61,7 @@ class ClientView:
 		self.ppi=ppi
 		self.inch_width=(window_size[0]/ppi, window_size[1]/ppi)
 		self.owned_block=None
+		self.next_block=None
 
 	def send(self, data):
 		self.server.sock.sendto(data.encode("utf-8"), self.addr)
@@ -88,7 +92,7 @@ class Server(Game):
 		self.theme=theme
 		self.inches_per_block=inches_per_block
 		self.server_address=server_address
-		self.tickrate=tickrate
+		self.tickrate=self.initial_tickrate=tickrate
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.sock.bind(server_address)
 		self.clients=[]
@@ -142,6 +146,7 @@ class Server(Game):
 				self.game_state=GameStates.arranging
 			if dgram["action"]=="start_OK":
 				client.game_state=GameStates.playing
+				self.create_user_blocks()
 
 			if client.owned_block is None:
 				return
@@ -210,7 +215,7 @@ class Server(Game):
 					block.y+=1
 
 				done=False
-				updated=False
+				updated=0
 				while not done:
 					done=True
 					for row in range(self.size[1]):
@@ -222,7 +227,19 @@ class Server(Game):
 							for col in range(self.size[0]):
 								self[0][col]=-1
 							done=False
-							updated=True
+							updated+=1
+							self.cleared+=1
+							
+				if updated:
+					self.score+=[0, 40, 100, 300, 1200][updated]*(self.level+1)
+					self.level=self.cleared//10
+					self.tickrate=self.initial_tickrate*(0.75**self.level)
+					[client.sendj({
+						"action":"update_cleared",
+						"cleared":self.cleared,
+						"score":self.score,
+						"level":self.level
+					}) for client in self.clients]
 
 				if self.check_collisions() or updated:
 					self.send_blocks_update()
@@ -263,13 +280,17 @@ class Server(Game):
 	
 	def create_user_blocks(self):
 		for client in self.clients:
+			if client.next_block is None:
+				client.next_block=random.choice(list(self.blocktypes.values()))
 			if client.owned_block is None:
 				# print(client.view_offset+2-(client.view_width//2))
 				client.owned_block=self.create_block(
-					random.choice(list(self.blocktypes.values())),
+					client.next_block,
 					client.view_offset+(client.view_width//2)-2,
 					-2
 				)
+				client.next_block=random.choice(list(self.blocktypes.values()))
+				client.sendj({"action":"notify_next_block", "block":chr(client.next_block.typeid)})
 
 	def create_block(self, blocktype, x, y):
 		self.current_blockid+=1
@@ -293,6 +314,9 @@ class Client(Game):
 		self.styles_cache={}
 
 		self.block=None
+		self.next_block=None
+
+		self._surf=pygame.Surface(size)
 
 		# self.connect()
 
@@ -336,6 +360,14 @@ class Client(Game):
 		if data["action"]=="start":
 			self.game_state=GameStates.playing
 			self.sendj({"action":"start_OK"})
+
+		if data["action"]=="update_cleared":
+			self.cleared=data["cleared"]
+			self.score=data["score"]
+			self.level=data["level"]
+
+		if data["action"]=="notify_next_block":
+			self.next_block=self.blocktypes[data["block"]]
 
 	def handle(self, dgram, addr):
 		if dgram[0]==ord('b'):
@@ -404,22 +436,22 @@ class Client(Game):
 				col=0
 				row+=1
 
-	def render(self, screen):
+	def render(self, screen, y_offset):
 		# print(self.get_scale())
-		screen.fill((0,0,0))
+		self._surf.fill((0,0,0))
 		if self.game_state==GameStates.playing:
-			self.draw_placed_blocks(screen)
+			self.draw_placed_blocks(self._surf)
 			for name, block in self.blocks.items():
-				block.draw_to(screen, self, block.x, block.y)
+				block.draw_to(self._surf, self, block.x, block.y)
 		else:
 			for x in range(self.view.view_offset-1, self.view.view_offset+self.view.view_width+2):
 				for y in range(self.view.get_blocks_at_size(self.inches_per_block)[1]+1):
-					screen.blit(
+					self._surf.blit(
 						pygame.font.SysFont("monospace",10).render("%i,%i"%(x,y), 0, (255,255,255)),
 						self.compute_offset(x,y)
 					)
 					pygame.draw.rect(
-						screen,
+						self._surf,
 						(255,0,0),
 						pygame.Rect(
 							self.compute_offset(x,y),
@@ -427,6 +459,7 @@ class Client(Game):
 						),
 						1
 					)
+		screen.blit(self._surf, (0,y_offset))
 
 	def handle_event(self, event):
 		if event.key==pygame.K_LEFT:

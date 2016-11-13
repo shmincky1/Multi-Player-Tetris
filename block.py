@@ -39,6 +39,16 @@ class BlockType:
 		self.grids=grids #array of 4x4 rows, cols array of booleans
 		self.typeid=typeid
 
+	def render_mini(self, theme):
+		surf=pygame.Surface([4*GRID_BASE_SIZE]*2)
+		surf.fill((69,69,69))
+		surf.set_colorkey((69,69,69))
+		for row_idx, row in enumerate(self.grids[0]):
+			for col_idx, val in enumerate(row):
+				if val:
+					surf.blit(theme.get_image(self.style), (col_idx*GRID_BASE_SIZE, row_idx*GRID_BASE_SIZE))
+		return pygame.transform.scale(surf, [int(4.5*GRID_BASE_SIZE)]*2)
+
 class Block:
 	_format_string="!HBhhB"
 	def __init__(self, blocktype, theme, blockid=None, position=None, rotation=0):
