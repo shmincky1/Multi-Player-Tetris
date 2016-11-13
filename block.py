@@ -107,3 +107,6 @@ def load_blocktypes(path):
 		for name, data in data["blocks"].items():
 			blocktypes[name]=BlockType(data["grids"], Styles.from_string(data["style"]), ord(name))
 	return blocktypes
+
+def build_images_for_theme(blocktypes, theme):
+	[blocktype.build_images_for_theme(theme) for blocktype in blocktypes]
