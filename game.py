@@ -141,6 +141,7 @@ class Server(Game):
 				client.game_state=GameStates.playing
 
 			if dgram["action"]=="move_left":
+				print("Moving left")
 				client.owned_block.x-=1
 				if client.owned_block.x==-1:
 					client.owned_block.x=self.size[0]-1
