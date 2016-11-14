@@ -501,7 +501,7 @@ class Client(Game):
 			self.sendj({"action":"move_right"})
 		elif event.key==pygame.K_DOWN:
 			self.sendj({"action":"move_down"})
-		elif event.key==pygame.K_d:
+		elif event.key==pygame.K_f:
 			self.sendj({"action":"rotate_ccw"})
 		elif event.key in [pygame.K_UP, pygame.K_d]:
 			self.sendj({"action":"rotate_cw"})
