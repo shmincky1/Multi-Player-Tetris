@@ -1,14 +1,10 @@
 # Multiplayer-Tetris
-<<<<<<< HEAD
-##System Requirements:
-  * Python3
-  * pygame
-  * Good wifi connection
-=======
+
 ## System Requirements
 * Python 3.5
 * PyGame
-* Fast local network  
+* Fast local network
+ 
 ## To Run
 1. Set environment variable "PPI" to [horizontal res of screen]/[diagonal measurement of screen]
   a. Linux command: 'PPI=[ppi value]'
@@ -18,4 +14,3 @@
     A. eg. python3 runclient.py server bpi=.5
 3. Run clients from left to right starting with the second one (waiting until the grid shows up to start the next one) with the command: [python] runclient.py client [server's local ip]
 4. Wait until all clients are connected and displaying the grid then press enter on the server
->>>>>>> decd702b538c17e782fed0463c6fd9a0be38775e
