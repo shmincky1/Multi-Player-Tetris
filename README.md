@@ -1,4 +1,5 @@
 # Multiplayer-Tetris
+Made by Louis Goessling and Charlie Moonen at a fall Code Day event in 2016
 
 ## System Requirements
 * Python 3.5
